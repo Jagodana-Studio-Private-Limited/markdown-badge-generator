@@ -13,7 +13,6 @@ type: "tool-builder"
 **Agency Website Repo:** https://github.com/Jagodana-Studio-Private-Limited/agency-website.git
 **Vercel Team:** `jagodana-studio-private-limiteds-projects`
 **Google Analytics ID:** `G-4ZFEX1Y93F`
-**Linear Project:** `cmlui5w8r004cp201wgqor1k4`
 **DNS:** Wildcard CNAME `*.tools.jagodana.com` pre-configured — no manual DNS verification needed
 **Deploy:** GitHub Actions `.github/workflows/deploy-vercel.yml` handles Vercel project creation, deployment, and domain attachment automatically on push to `main`
 
@@ -34,7 +33,6 @@ Verify required environment variables are set — stop and report if any are mis
 ```bash
 echo "GITHUB_TOKEN: ${GITHUB_TOKEN:?MISSING}"
 echo "VERCEL_TOKEN: ${VERCEL_TOKEN:?MISSING}"
-echo "LINEAR_API_KEY: ${LINEAR_API_KEY:?MISSING}"
 ```
 
 ---
@@ -208,20 +206,7 @@ If GA is empty, re-run Step 4.2 and redeploy.
 
 ### Step 7 — Agency Website: Work Page + Blog Post + Screenshot
 
-#### 7.1 Create a Linear child ticket
-
-```bash
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $LINEAR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "mutation { issueCreate(input: { title: \"[Tool Launch] {Tool Name} — work page, blog post, social posts + screenshot\", teamId: \"cmlui5w8r004cp201wgqor1k4\", description: \"Add work MDX, blog MDX, social posts, and OG screenshot for {tool-name}.\" }) { success issue { identifier } } }"
-  }' | jq '.data.issueCreate.issue.identifier'
-```
-
-Note the ticket number for the final output.
-
-#### 7.2 Clone agency-website
+#### 7.1 Clone agency-website
 
 ```bash
 git clone "https://${GITHUB_TOKEN}@github.com/Jagodana-Studio-Private-Limited/agency-website.git" \
@@ -291,7 +276,6 @@ git push origin feat/{tool-name}-tool-launch
 gh pr create \
   --title "feat: {Tool Name} — work page, blog post, social posts + screenshot" \
   --body "Live at: https://{tool-name}.tools.jagodana.com
-Linear: #{ticket-number}
 GA verified: G-4ZFEX1Y93F ✓"
 ```
 
@@ -318,7 +302,6 @@ GitHub Repo:          https://github.com/Jagodana-Studio-Private-Limited/{tool-n
 Live URL:             https://{tool-name}.tools.jagodana.com
 Google Analytics:     G-4ZFEX1Y93F ✓ (verified in page source)
 Agency Website PR:    #{pr-number}
-Linear Ticket:        #{task-number}
 Fork verified:        true (parent: base-template-for-tool-development)
 Screenshot:           public/work/{tool-name}.webp ✓ (or: NOT GENERATED — add manually)
 Vercel project.json:  updated (projectId: prj_xxx)
@@ -339,5 +322,4 @@ Status:               Successfully deployed
 - Always run `vercel link --token $VERCEL_TOKEN` before deploy to get the correct `projectId`
 - Verify GA is firing (`curl | grep G-`) before proceeding to Step 7
 - Social posts must be added as a PR comment on the agency-website PR
-- Linear child ticket must be created in project `cmlui5w8r004cp201wgqor1k4`
 - Do not merge any PR — submit only

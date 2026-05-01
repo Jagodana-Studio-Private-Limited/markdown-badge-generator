@@ -14,8 +14,7 @@ Run daily via the scheduled remote agent to keep the 365 Tools Challenge going a
 4. Implements the full tool (TypeScript, pure client-side, shadcn/ui)
 5. Links to Vercel, sets env vars, deploys via GitHub Actions
 6. Verifies live URL returns 200 and GA tag is present
-7. Creates Linear child ticket
-8. Adds work MDX + blog MDX + social posts to agency-website
+7. Adds work MDX + blog MDX + social posts to agency-website
 9. Generates OG screenshot (attempts — gracefully skips if unavailable)
 10. Opens a PR on agency-website — does NOT merge
 
@@ -27,7 +26,6 @@ These must be set in the routine config before this runs:
 |---|---|---|
 | `GITHUB_TOKEN` | Clone, push, fork, open PRs | github.com/settings/tokens |
 | `VERCEL_TOKEN` | `vercel link` + `vercel env add` | vercel.com/account/tokens |
-| `LINEAR_API_KEY` | Create Linear child tickets | linear.app/settings/api |
 
 ## Prompt file
 
