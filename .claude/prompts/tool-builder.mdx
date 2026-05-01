@@ -128,45 +128,11 @@ cd /tmp/tool-build/{tool-name} && npm install && npm run type-check
 
 ---
 
-### Step 4 — Create Vercel Project & Commit project.json
+### Step 4 — Pre-deploy Check
 
-> `.env*` is gitignored — do NOT create `.env.production`. Create the Vercel project via API and commit `.vercel/project.json`. GitHub Actions handles setting env vars (GA + App URL) and deployment automatically on push.
+> `.env*` and `.vercel/` are both gitignored — do NOT create either. The GitHub Actions workflow handles everything: it links the repo to the correct Vercel project, sets `NEXT_PUBLIC_GA_ID` and `NEXT_PUBLIC_APP_URL` via the Vercel API, builds, deploys, and attaches the custom domain automatically on push to `main`.
 
-#### 4.1 Create the Vercel project via API
-
-```bash
-cd /tmp/tool-build/{tool-name}
-
-PROJECT_RESPONSE=$(curl -s -X POST \
-  "https://api.vercel.com/v10/projects?teamId=team_mmazlMGQHxZTYGaYhz91rWVt" \
-  -H "Authorization: Bearer $VERCEL_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"{tool-name}\",\"framework\":\"nextjs\"}")
-
-PROJECT_ID=$(echo $PROJECT_RESPONSE | jq -r '.id')
-echo "Project ID: $PROJECT_ID"
-
-if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
-  echo "ERROR: Failed to create Vercel project. Response:"
-  echo "$PROJECT_RESPONSE"
-  exit 1
-fi
-```
-
-#### 4.2 Write `.vercel/project.json`
-
-```bash
-mkdir -p .vercel
-echo "{\"projectId\":\"$PROJECT_ID\",\"orgId\":\"team_mmazlMGQHxZTYGaYhz91rWVt\"}" > .vercel/project.json
-cat .vercel/project.json
-```
-
-#### 4.3 Commit `.vercel/project.json`
-
-```bash
-git add .vercel/project.json
-git commit -m "chore: add vercel project.json"
-```
+No Vercel operations are needed from the agent. Just verify the tool code is complete and the type-check passes before moving to Step 5.
 
 ---
 

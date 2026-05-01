@@ -35,6 +35,20 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
+      - name: Link to correct Vercel project
+        run: |
+          # Remove the base template's project.json so we create/link the correct project
+          rm -f .vercel/project.json
+
+          # Link to (or create) the project for this specific tool
+          vercel link \
+            --yes \
+            --project "$REPO_NAME" \
+            --scope jagodana-studio-private-limiteds-projects \
+            --token=${{ secrets.VERCEL_TOKEN }} 2>&1 || true
+
+          cat .vercel/project.json || echo "WARNING: project.json not created"
+
       - name: Pull Vercel Environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
@@ -43,21 +57,23 @@ jobs:
           PROJECT_ID=$(cat .vercel/project.json | jq -r '.projectId')
           ORG_ID=$(cat .vercel/project.json | jq -r '.orgId')
 
+          echo "Setting env vars for project: $PROJECT_ID in org: $ORG_ID"
+
           # Upsert NEXT_PUBLIC_GA_ID
           curl -s -X POST \
             "https://api.vercel.com/v10/projects/${PROJECT_ID}/env?teamId=${ORG_ID}&upsert=true" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"key\":\"NEXT_PUBLIC_GA_ID\",\"value\":\"G-4ZFEX1Y93F\",\"type\":\"plain\",\"target\":[\"production\"]}" || true
+            -d "{\"key\":\"NEXT_PUBLIC_GA_ID\",\"value\":\"G-4ZFEX1Y93F\",\"type\":\"plain\",\"target\":[\"production\"]}" | jq '.key // .error' || true
 
           # Upsert NEXT_PUBLIC_APP_URL
           curl -s -X POST \
             "https://api.vercel.com/v10/projects/${PROJECT_ID}/env?teamId=${ORG_ID}&upsert=true" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"key\":\"NEXT_PUBLIC_APP_URL\",\"value\":\"https://${DOMAIN}\",\"type\":\"plain\",\"target\":[\"production\"]}" || true
+            -d "{\"key\":\"NEXT_PUBLIC_APP_URL\",\"value\":\"https://${DOMAIN}\",\"type\":\"plain\",\"target\":[\"production\"]}" | jq '.key // .error' || true
 
-          # Pull again to load the env vars into .vercel/
+          # Pull again to load the env vars into the local .vercel/
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project
@@ -72,23 +88,25 @@ jobs:
 
       - name: Fetch Vercel Project ID
         run: |
-          PROJECT_ID=$(curl -s \
-          -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-          "https://api.vercel.com/v9/projects/${REPO_NAME}?teamId=${{ secrets.VERCEL_TEAM_ID }}" \
-          | jq -r '.id')
-
+          PROJECT_ID=$(cat .vercel/project.json | jq -r '.projectId')
+          ORG_ID=$(cat .vercel/project.json | jq -r '.orgId')
           echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "ORG_ID=$ORG_ID" >> $GITHUB_ENV
+          echo "Vercel Project ID: $PROJECT_ID"
 
       - name: Attach Custom Domain
         run: |
-          curl -X POST \
-          "https://api.vercel.com/v10/projects/${PROJECT_ID}/domains?teamId=${{ secrets.VERCEL_TEAM_ID }}" \
+          echo "Attaching domain $DOMAIN to project $PROJECT_ID in org $ORG_ID"
+          RESPONSE=$(curl -s -X POST \
+          "https://api.vercel.com/v10/projects/${PROJECT_ID}/domains?teamId=${ORG_ID}" \
           -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
           -H "Content-Type: application/json" \
-          -d '{"name":"'"$DOMAIN"'"}' || true
+          -d '{"name":"'"$DOMAIN"'"}')
+          echo "Domain attachment response: $RESPONSE"
 
       - name: Output Deployment Info
         run: |
           echo "Tool deployed successfully!"
           echo "Domain: https://$DOMAIN"
           echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "Project ID: $PROJECT_ID"
