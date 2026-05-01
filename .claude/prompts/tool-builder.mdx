@@ -1,0 +1,343 @@
+---
+title: "365 Tools Challenge — Create One New Micro-Tool"
+description: "Step-by-step instructions for building, deploying, and documenting one new micro-tool for the 365 Tools Challenge."
+version: "3.2"
+updated: "2026-05-01"
+schedule: "daily"
+type: "tool-builder"
+---
+
+**Goal:** Create one new micro-tool for the "365 Tools Challenge" — build, deploy, and document one small useful tool every day for developers, designers, founders, and product engineers.
+
+**Base Template Repo:** https://github.com/Jagodana-Studio-Private-Limited/base-template-for-tool-development.git
+**Agency Website Repo:** https://github.com/Jagodana-Studio-Private-Limited/agency-website.git
+**Vercel Team:** `jagodana-studio-private-limiteds-projects`
+**Google Analytics ID:** `G-4ZFEX1Y93F`
+**Linear Project:** `cmlui5w8r004cp201wgqor1k4`
+**DNS:** Wildcard CNAME `*.tools.jagodana.com` pre-configured — no manual DNS verification needed
+**Deploy:** GitHub Actions `.github/workflows/deploy-vercel.yml` handles Vercel project creation, deployment, and domain attachment automatically on push to `main`
+
+---
+
+### Step 0 — Environment Setup
+
+Run these commands before anything else:
+
+```bash
+git config --global user.email "dharmendra@jagodana.org"
+git config --global user.name "dharmendra-jagodana"
+gh auth setup-git
+```
+
+Verify required environment variables are set — stop and report if any are missing:
+
+```bash
+echo "GITHUB_TOKEN: ${GITHUB_TOKEN:?MISSING}"
+echo "VERCEL_TOKEN: ${VERCEL_TOKEN:?MISSING}"
+echo "LINEAR_API_KEY: ${LINEAR_API_KEY:?MISSING}"
+```
+
+---
+
+### Step 1 — Idea Generation (Duplicate Check First)
+
+#### 1.1 Fetch the full org repo list
+
+```bash
+gh repo list Jagodana-Studio-Private-Limited --limit 1000 --json name | jq '.[].name'
+```
+
+There are 200+ tools already. Always fetch the full list — never guess or sample.
+
+Also check the live website for tools or posts that may not have a standalone repo:
+
+```bash
+curl -s https://www.jagodana.com/work | grep -o 'href="/work/[^"]*"' | sort
+curl -s https://www.jagodana.com/blogs | grep -o 'href="/blogs/[^"]*"' | sort
+```
+
+#### 1.2 Pick a candidate idea
+
+- Must solve a small productivity problem for a developer / designer / product manager / IT person
+- Must be usable instantly — no login, no API key, pure frontend logic
+- Must be implementable as a simple web tool
+- Must pass the quality filter: "Would someone actually Google this?"
+
+#### 1.3 Verify the candidate name does not exist
+
+```bash
+gh repo view Jagodana-Studio-Private-Limited/{tool-name} 2>&1
+```
+
+If this returns anything other than an error, that tool already exists — pick a different idea.
+
+#### 1.4 Return
+
+- Tool Name
+- Short Description
+- Target Audience
+- Key Features (3–5)
+
+---
+
+### Step 2 — Repository Setup
+
+> FORK — never create from scratch. All tools must be forks of the base template.
+
+#### 2.1 Fork the base template
+
+```bash
+gh repo fork Jagodana-Studio-Private-Limited/base-template-for-tool-development \
+  --org Jagodana-Studio-Private-Limited \
+  --fork-name {tool-name} \
+  --clone=false
+```
+
+#### 2.2 Clone the fork (HTTPS — not SSH)
+
+```bash
+git clone "https://${GITHUB_TOKEN}@github.com/Jagodana-Studio-Private-Limited/{tool-name}.git" \
+  /tmp/tool-build/{tool-name}
+cd /tmp/tool-build/{tool-name}
+```
+
+#### 2.3 Verify the fork
+
+```bash
+gh repo view Jagodana-Studio-Private-Limited/{tool-name} --json isFork,parent
+```
+
+`isFork` must be `true` and `parent.name` must be `base-template-for-tool-development`. If not, stop and fix before continuing.
+
+---
+
+### Step 3 — Implement the Tool
+
+1. Read `CLAUDE.md` in the cloned repo fully before making any changes.
+2. Update `src/config/site.ts` — title, description, SEO tags, feature cards, FAQ, related tools.
+3. Update `package.json` — set `"name"` to `{tool-name}`.
+4. Update `public/favicon.svg` and `public/site.webmanifest` — tool name and theme color.
+5. Update `src/app/globals.css` — set `--brand` and `--brand-accent` CSS variables to match the tool's color theme.
+6. Create `src/components/{tool-name}-tool.tsx` — implement full tool logic. All logic must be pure client-side TypeScript (no external API calls, no auth).
+7. Update `src/components/home-page.tsx` — import the tool component and replace the TODO placeholder section with `<{ToolName}Tool />`.
+8. Delete `src/app/(examples)/` — remove the template example page.
+9. Ensure UI matches the template styling (shadcn/ui, Tailwind CSS, brand color tokens).
+10. Run a type-check before moving on — fix any errors before proceeding:
+
+```bash
+cd /tmp/tool-build/{tool-name} && npm install && npm run type-check
+```
+
+---
+
+### Step 4 — Analytics & Environment Variables
+
+> `.env*` is gitignored in the base template — do NOT create `.env.production`. Set env vars directly in the Vercel project via CLI so they are picked up at build time.
+
+#### 4.1 Link the repo to the Vercel project
+
+```bash
+cd /tmp/tool-build/{tool-name}
+vercel link \
+  --token $VERCEL_TOKEN \
+  --scope jagodana-studio-private-limiteds-projects \
+  --project {tool-name} \
+  --yes
+```
+
+This creates/updates `.vercel/project.json` with the correct `projectId`. Commit this file.
+
+#### 4.2 Set environment variables in Vercel
+
+```bash
+echo "G-4ZFEX1Y93F" | vercel env add NEXT_PUBLIC_GA_ID production --token $VERCEL_TOKEN --yes
+echo "https://{tool-name}.tools.jagodana.com" | vercel env add NEXT_PUBLIC_APP_URL production --token $VERCEL_TOKEN --yes
+```
+
+#### 4.3 Commit the updated `.vercel/project.json`
+
+```bash
+git add .vercel/project.json
+git commit -m "chore: link vercel project + set GA env vars"
+git push origin main
+```
+
+---
+
+### Step 5 — Deploy
+
+Commit all changes and push to main:
+
+```bash
+git add .
+git commit -m "feat: add {tool-name} tool"
+git push origin main
+```
+
+GitHub Actions will build, deploy to Vercel, and attach the custom domain `{tool-name}.tools.jagodana.com` automatically.
+
+If the workflow does not appear within 30 seconds, trigger it manually:
+
+```bash
+gh workflow run deploy-vercel.yml --repo Jagodana-Studio-Private-Limited/{tool-name}
+```
+
+Watch it complete — all steps must show ✓ before continuing:
+
+```bash
+gh run watch {run-id} --repo Jagodana-Studio-Private-Limited/{tool-name}
+```
+
+---
+
+### Step 6 — Verify Deployment
+
+Wait ~3–5 minutes after push, then confirm all of the following. Do not proceed to Step 7 if any check fails.
+
+```bash
+# Tool must return 200
+curl -s -o /dev/null -w "%{http_code}" https://{tool-name}.tools.jagodana.com
+
+# GA tag must be present
+curl -s https://{tool-name}.tools.jagodana.com | grep -o "G-[A-Z0-9]*"
+```
+
+If GA is empty, re-run Step 4.2 and redeploy.
+
+---
+
+### Step 7 — Agency Website: Work Page + Blog Post + Screenshot
+
+#### 7.1 Create a Linear child ticket
+
+```bash
+curl -s -X POST https://api.linear.app/graphql \
+  -H "Authorization: $LINEAR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { issueCreate(input: { title: \"[Tool Launch] {Tool Name} — work page, blog post, social posts + screenshot\", teamId: \"cmlui5w8r004cp201wgqor1k4\", description: \"Add work MDX, blog MDX, social posts, and OG screenshot for {tool-name}.\" }) { success issue { identifier } } }"
+  }' | jq '.data.issueCreate.issue.identifier'
+```
+
+Note the ticket number for the final output.
+
+#### 7.2 Clone agency-website
+
+```bash
+git clone "https://${GITHUB_TOKEN}@github.com/Jagodana-Studio-Private-Limited/agency-website.git" \
+  /tmp/agency-website
+```
+
+If already cloned, pull latest:
+
+```bash
+cd /tmp/agency-website && git fetch origin && git rebase origin/main
+```
+
+#### 7.3 Create a new branch
+
+```bash
+cd /tmp/agency-website
+git checkout -b feat/{tool-name}-tool-launch
+```
+
+#### 7.4 Add work MDX
+
+Create `content/work/{tool-name}.mdx` — covers features, use cases, technical implementation, and links to the live tool. Follow the same structure as existing work pages (e.g. `border-radius-generator.mdx`).
+
+#### 7.5 Add blog MDX
+
+Create `content/blogs/introducing-{tool-name}.mdx` — SEO-optimised article with H2 question headings, use cases, and AEO/GEO patterns.
+
+Read `.claude/skills/seo-audit/SKILL.md`, `.claude/skills/seo-audit/references/ai-writing-detection.md`, and `.claude/skills/seo-audit/references/aeo-geo-patterns.md` from the agency-website repo before writing.
+
+#### 7.6 Add social posts MDX
+
+Create `content/social/{tool-name}-social-posts.mdx` — 2–3 Twitter/X versions and a LinkedIn post. Mention the approximate build time (be specific — seconds or minutes).
+
+#### 7.7 Generate the OG screenshot
+
+> The tool must already be live and GA must be verified (Step 6) before running this step.
+
+```bash
+cd /tmp/agency-website
+npm install -g nvm 2>/dev/null || true
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+nvm use 22 2>/dev/null || node --version
+yarn install --ignore-engines
+npx playwright install chromium --with-deps 2>/dev/null || true
+yarn screenshots
+```
+
+If `yarn screenshots` fails or `public/work/{tool-name}.webp` is not created, continue without it — note this in the final output. The PR can still be opened; the screenshot can be added manually.
+
+Confirm `public/work/{tool-name}.webp` was created before continuing.
+
+#### 7.8 Commit and open a PR
+
+```bash
+git add content/work/{tool-name}.mdx \
+        content/blogs/introducing-{tool-name}.mdx \
+        content/social/{tool-name}-social-posts.mdx
+
+# Add screenshot only if it was generated
+[ -f public/work/{tool-name}.webp ] && git add public/work/{tool-name}.webp
+
+git commit -m "feat: add {tool-name} tool launch content + screenshot"
+git fetch origin && git rebase origin/main
+git push origin feat/{tool-name}-tool-launch
+
+gh pr create \
+  --title "feat: {Tool Name} — work page, blog post, social posts + screenshot" \
+  --body "Live at: https://{tool-name}.tools.jagodana.com
+Linear: #{ticket-number}
+GA verified: G-4ZFEX1Y93F ✓"
+```
+
+> Do NOT merge — submit PR only.
+
+#### 7.9 Add social posts as a PR comment
+
+```bash
+gh pr comment {pr-number} \
+  --repo Jagodana-Studio-Private-Limited/agency-website \
+  --body "## Social Media Posts — Ready to Schedule
+
+{social posts content here}"
+```
+
+---
+
+### Step 8 — Final Output
+
+```
+Tool Name:            {tool-name}
+Description:          {description}
+GitHub Repo:          https://github.com/Jagodana-Studio-Private-Limited/{tool-name}
+Live URL:             https://{tool-name}.tools.jagodana.com
+Google Analytics:     G-4ZFEX1Y93F ✓ (verified in page source)
+Agency Website PR:    #{pr-number}
+Linear Ticket:        #{task-number}
+Fork verified:        true (parent: base-template-for-tool-development)
+Screenshot:           public/work/{tool-name}.webp ✓ (or: NOT GENERATED — add manually)
+Vercel project.json:  updated (projectId: prj_xxx)
+Status:               Successfully deployed
+```
+
+---
+
+### Hard Requirements
+
+- Tool repo must be a fork of `base-template-for-tool-development` — never create from scratch
+- Verify fork with `gh repo view --json isFork,parent` before implementing anything
+- Verify the repo name doesn't already exist before finalising the idea
+- Idea must pass the quality filter: "Would someone actually Google this?"
+- All logic must run fully in the browser — no backend, no API keys
+- UI must match the template styling
+- Never create `.env.production` — use `vercel env add --token $VERCEL_TOKEN` instead
+- Always run `vercel link --token $VERCEL_TOKEN` before deploy to get the correct `projectId`
+- Verify GA is firing (`curl | grep G-`) before proceeding to Step 7
+- Social posts must be added as a PR comment on the agency-website PR
+- Linear child ticket must be created in project `cmlui5w8r004cp201wgqor1k4`
+- Do not merge any PR — submit only
