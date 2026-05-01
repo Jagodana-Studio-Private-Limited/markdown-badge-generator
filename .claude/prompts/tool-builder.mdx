@@ -170,13 +170,13 @@ Wait ~3–5 minutes after the GitHub Actions workflow completes, then verify via
 # Confirm the deployment exists and is READY
 curl -s \
   -H "Authorization: Bearer $VERCEL_TOKEN" \
-  "https://api.vercel.com/v9/projects/{tool-name}?teamId=team_mmazlMGQHxZTYGaYhz91rWVt" \
+  "https://api.vercel.com/v9/projects/{tool-name}?teamId=$VERCEL_TEAM_ID" \
   | jq '{name: .name, link: .link}'
 
 # Confirm GA env var is set on the project
 curl -s \
   -H "Authorization: Bearer $VERCEL_TOKEN" \
-  "https://api.vercel.com/v9/projects/{tool-name}/env?teamId=team_mmazlMGQHxZTYGaYhz91rWVt" \
+  "https://api.vercel.com/v9/projects/{tool-name}/env?teamId=$VERCEL_TEAM_ID" \
   | jq '[.envs[] | select(.key | startswith("NEXT_PUBLIC")) | {key, value: .value}]'
 ```
 
