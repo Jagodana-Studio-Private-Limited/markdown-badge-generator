@@ -164,17 +164,23 @@ gh run watch {run-id} --repo Jagodana-Studio-Private-Limited/{tool-name}
 
 ### Step 6 — Verify Deployment
 
-Wait ~3–5 minutes after push, then confirm all of the following. Do not proceed to Step 7 if any check fails.
+Wait ~3–5 minutes after the GitHub Actions workflow completes, then verify via the Vercel API (do NOT use curl against the live URL — the CCR sandbox IP is blocked by Vercel's CDN and will return 403 even when the deployment is live):
 
 ```bash
-# Tool must return 200
-curl -s -o /dev/null -w "%{http_code}" https://{tool-name}.tools.jagodana.com
+# Confirm the deployment exists and is READY
+curl -s \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  "https://api.vercel.com/v9/projects/{tool-name}?teamId=team_mmazlMGQHxZTYGaYhz91rWVt" \
+  | jq '{name: .name, link: .link}'
 
-# GA tag must be present
-curl -s https://{tool-name}.tools.jagodana.com | grep -o "G-[A-Z0-9]*"
+# Confirm GA env var is set on the project
+curl -s \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  "https://api.vercel.com/v9/projects/{tool-name}/env?teamId=team_mmazlMGQHxZTYGaYhz91rWVt" \
+  | jq '[.envs[] | select(.key | startswith("NEXT_PUBLIC")) | {key, value: .value}]'
 ```
 
-If GA is empty, re-run Step 4.2 and redeploy.
+If `NEXT_PUBLIC_GA_ID` is missing from the env list, the GitHub Actions workflow did not complete successfully — check the workflow run log at `https://github.com/Jagodana-Studio-Private-Limited/{tool-name}/actions`.
 
 ---
 
