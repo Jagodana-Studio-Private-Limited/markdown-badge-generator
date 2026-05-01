@@ -128,36 +128,44 @@ cd /tmp/tool-build/{tool-name} && npm install && npm run type-check
 
 ---
 
-### Step 4 — Analytics & Environment Variables
+### Step 4 — Create Vercel Project & Commit project.json
 
-> `.env*` is gitignored in the base template — do NOT create `.env.production`. Set env vars directly in the Vercel project via CLI so they are picked up at build time.
+> `.env*` is gitignored — do NOT create `.env.production`. Create the Vercel project via API and commit `.vercel/project.json`. GitHub Actions handles setting env vars (GA + App URL) and deployment automatically on push.
 
-#### 4.1 Link the repo to the Vercel project
+#### 4.1 Create the Vercel project via API
 
 ```bash
 cd /tmp/tool-build/{tool-name}
-vercel link \
-  --token $VERCEL_TOKEN \
-  --scope jagodana-studio-private-limiteds-projects \
-  --project {tool-name} \
-  --yes
+
+PROJECT_RESPONSE=$(curl -s -X POST \
+  "https://api.vercel.com/v10/projects?teamId=team_mmazlMGQHxZTYGaYhz91rWVt" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"{tool-name}\",\"framework\":\"nextjs\"}")
+
+PROJECT_ID=$(echo $PROJECT_RESPONSE | jq -r '.id')
+echo "Project ID: $PROJECT_ID"
+
+if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
+  echo "ERROR: Failed to create Vercel project. Response:"
+  echo "$PROJECT_RESPONSE"
+  exit 1
+fi
 ```
 
-This creates/updates `.vercel/project.json` with the correct `projectId`. Commit this file.
-
-#### 4.2 Set environment variables in Vercel
+#### 4.2 Write `.vercel/project.json`
 
 ```bash
-echo "G-4ZFEX1Y93F" | vercel env add NEXT_PUBLIC_GA_ID production --token $VERCEL_TOKEN --yes
-echo "https://{tool-name}.tools.jagodana.com" | vercel env add NEXT_PUBLIC_APP_URL production --token $VERCEL_TOKEN --yes
+mkdir -p .vercel
+echo "{\"projectId\":\"$PROJECT_ID\",\"orgId\":\"team_mmazlMGQHxZTYGaYhz91rWVt\"}" > .vercel/project.json
+cat .vercel/project.json
 ```
 
-#### 4.3 Commit the updated `.vercel/project.json`
+#### 4.3 Commit `.vercel/project.json`
 
 ```bash
 git add .vercel/project.json
-git commit -m "chore: link vercel project + set GA env vars"
-git push origin main
+git commit -m "chore: add vercel project.json"
 ```
 
 ---
