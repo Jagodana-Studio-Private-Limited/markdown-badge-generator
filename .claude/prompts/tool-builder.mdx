@@ -219,28 +219,28 @@ If already cloned, pull latest:
 cd /tmp/agency-website && git fetch origin && git rebase origin/main
 ```
 
-#### 7.3 Create a new branch
+#### 7.2 Create a new branch
 
 ```bash
 cd /tmp/agency-website
 git checkout -b feat/{tool-name}-tool-launch
 ```
 
-#### 7.4 Add work MDX
+#### 7.3 Add work MDX
 
 Create `content/work/{tool-name}.mdx` — covers features, use cases, technical implementation, and links to the live tool. Follow the same structure as existing work pages (e.g. `border-radius-generator.mdx`).
 
-#### 7.5 Add blog MDX
+#### 7.4 Add blog MDX
 
 Create `content/blogs/introducing-{tool-name}.mdx` — SEO-optimised article with H2 question headings, use cases, and AEO/GEO patterns.
 
 Read `.claude/skills/seo-audit/SKILL.md`, `.claude/skills/seo-audit/references/ai-writing-detection.md`, and `.claude/skills/seo-audit/references/aeo-geo-patterns.md` from the agency-website repo before writing.
 
-#### 7.6 Add social posts MDX
+#### 7.5 Add social posts MDX
 
 Create `content/social/{tool-name}-social-posts.mdx` — 2–3 Twitter/X versions and a LinkedIn post. Mention the approximate build time (be specific — seconds or minutes).
 
-#### 7.7 Generate the OG screenshot
+#### 7.6 Generate the OG screenshot
 
 > The tool must already be live and GA must be verified (Step 6) before running this step.
 
@@ -259,7 +259,7 @@ If `yarn screenshots` fails or `public/work/{tool-name}.webp` is not created, co
 
 Confirm `public/work/{tool-name}.webp` was created before continuing.
 
-#### 7.8 Commit and open a PR
+#### 7.7 Commit and open a PR
 
 ```bash
 git add content/work/{tool-name}.mdx \
@@ -281,7 +281,7 @@ GA verified: G-4ZFEX1Y93F ✓"
 
 > Do NOT merge — submit PR only.
 
-#### 7.9 Add social posts as a PR comment
+#### 7.8 Add social posts as a PR comment
 
 ```bash
 gh pr comment {pr-number} \
