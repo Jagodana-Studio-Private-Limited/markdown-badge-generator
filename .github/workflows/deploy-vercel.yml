@@ -38,6 +38,28 @@ jobs:
       - name: Pull Vercel Environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Set GA and App URL env vars in Vercel
+        run: |
+          PROJECT_ID=$(cat .vercel/project.json | jq -r '.projectId')
+          ORG_ID=$(cat .vercel/project.json | jq -r '.orgId')
+
+          # Upsert NEXT_PUBLIC_GA_ID
+          curl -s -X POST \
+            "https://api.vercel.com/v10/projects/${PROJECT_ID}/env?teamId=${ORG_ID}&upsert=true" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"key\":\"NEXT_PUBLIC_GA_ID\",\"value\":\"G-4ZFEX1Y93F\",\"type\":\"plain\",\"target\":[\"production\"]}" || true
+
+          # Upsert NEXT_PUBLIC_APP_URL
+          curl -s -X POST \
+            "https://api.vercel.com/v10/projects/${PROJECT_ID}/env?teamId=${ORG_ID}&upsert=true" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"key\":\"NEXT_PUBLIC_APP_URL\",\"value\":\"https://${DOMAIN}\",\"type\":\"plain\",\"target\":[\"production\"]}" || true
+
+          # Pull again to load the env vars into .vercel/
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
       - name: Build Project
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
